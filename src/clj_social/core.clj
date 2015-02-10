@@ -64,7 +64,7 @@
         [(.getToken token) (.getSecret token)])
       (let [access-token (getAccessToken this verifier)
             id (getId this access-token)]
-        [access-token id])))
+        [(.getToken access-token) id])))
   (getUserInfo [this access-token id]
     (let [params (build-params this {:access-token access-token :id id})
           req (OAuthRequest. Verb/GET ((spec type) :user-url))
