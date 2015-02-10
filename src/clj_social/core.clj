@@ -61,10 +61,10 @@
     (if (= :wechat (keyword type))
       (let [token (.getAccessToken this verifier)]
         ;; bind openid to secret
-        [(.getToken token) (.getSecret token)])
+        [(.getToken token) (str (.getSecret token))])
       (let [access-token (getAccessToken this verifier)
             id (getId this access-token)]
-        [(.getToken access-token) id])))
+        [(.getToken access-token) (str id)])))
   (getUserInfo [this access-token id]
     (let [params (build-params this {:access-token access-token :id id})
           req (OAuthRequest. Verb/GET ((spec type) :user-url))
