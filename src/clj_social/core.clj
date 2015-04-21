@@ -43,8 +43,8 @@
   (getAuthorizationUrl [_])
   (getAccessToken [_ verifier])
   (getId [_ access-token])
-  (getAccessTokenAndId [_ verifier])
-  (getUserInfo [_ params]))
+  (getUserInfo [_ params])
+  (getAll [_ verifier]))
 
 (defrecord Social [type app-key app-secret callback-uri]
   ISocial
@@ -52,19 +52,18 @@
     (wrap-service this (.getAuthorizationUrl ((spec type) :request-token))))
   (getAccessToken [this verifier]
     (wrap-service this (.getAccessToken ((spec type) :request-token)
-                         (Verifier. verifier))))
+                                        (Verifier. verifier))))
   (getId [this access-token]
-    (wrap-service this
-                  (get-body access-token ((spec type) :id-url))
-                  (((spec type) :id-fn))))
-  (getAccessTokenAndId [this verifier]
-    (if (= :wechat (keyword type))
-      (let [token (.getAccessToken this verifier)]
-        ;; bind openid to secret
-        [(.getToken token) (str (.getSecret token))])
-      (let [access-token (getAccessToken this verifier)
-            id (getId this access-token)]
-        [(.getToken access-token) (str id)])))
+    (let [type (keyword type)]
+      (cond
+        (= type :wechat)
+        (str (.getSecret access-token))
+        (contains? #{:qq :weibo} type)
+        (-> this
+           (wrap-service
+            (get-body access-token ((spec type) :id-url))
+            (((spec type) :id-fn)))
+           str))))
   (getUserInfo
     [this params]
     (let [params (build-params this params)
@@ -73,4 +72,16 @@
               (.addQuerystringParameter req k v))]
       (-> (.send req)
           (.getBody)
-          read-str))))
+          read-str)))
+  (getAll
+    [this verifier]
+    (let [token (getAccessToken this verifier)
+          id (getId this token)
+          token (.getToken token)
+          user-info (getUserInfo this {:access-token token
+                                       :id id})]
+      {:access-token token
+       :id (case type
+             :github (get user-info "login")
+             id)
+       :user-info user-info})))
