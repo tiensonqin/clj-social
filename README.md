@@ -23,7 +23,8 @@ for now support qq, sinaweibo and wechat.
 (def id (.getId qq token))
 
 ;; get user info
-(def user (.getUserInfo qq token id))
+(def user (.getUserInfo github {:access-token token
+                                :id id}))
 ```
 
 

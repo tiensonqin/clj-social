@@ -44,7 +44,7 @@
   (getAccessToken [_ verifier])
   (getId [_ access-token])
   (getAccessTokenAndId [_ verifier])
-  (getUserInfo [_ access-token id]))
+  (getUserInfo [_ params]))
 
 (defrecord Social [type app-key app-secret callback-uri]
   ISocial
@@ -65,8 +65,9 @@
       (let [access-token (getAccessToken this verifier)
             id (getId this access-token)]
         [(.getToken access-token) (str id)])))
-  (getUserInfo [this access-token id]
-    (let [params (build-params this {:access-token access-token :id id})
+  (getUserInfo
+    [this params]
+    (let [params (build-params this params)
           req (OAuthRequest. Verb/GET ((spec type) :user-url))
           _ (doseq [[k v] params]
               (.addQuerystringParameter req k v))]
