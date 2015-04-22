@@ -2,6 +2,8 @@ import org.scribe.builder.api.DefaultApi20;
 
 import org.scribe.model.OAuthConfig;
 import org.scribe.utils.OAuthEncoder;
+import org.scribe.utils.Preconditions;
+import org.scribe.model.OAuthConstants;
 
 public class GithubApi extends DefaultApi20
 {
@@ -13,8 +15,17 @@ public class GithubApi extends DefaultApi20
     }
 
     @Override
-    public String getAuthorizationUrl(OAuthConfig config) {
-        return String.format(AUTHORIZE_URL, config.getApiKey(),
-                             OAuthEncoder.encode(config.getCallback()));
-    }
+    public String getAuthorizationUrl(OAuthConfig config)
+        {
+            Preconditions.checkValidUrl(config.getCallback(),
+                                        "Must provide a valid url as callback. github does not support OOB");
+
+            final StringBuilder sb = new StringBuilder(String.format(AUTHORIZE_URL, config.getApiKey(), OAuthEncoder.encode(config.getCallback())));
+            if (config.hasScope()) {
+                sb.append('&').append(OAuthConstants.SCOPE).append('=').append(OAuthEncoder.encode(config.getScope()));}
+            if (config.hasState()) {
+                sb.append('&').append(OAuthConstants.STATE).append('=').append(OAuthEncoder.encode(config.getState()));
+            }
+            return sb.toString();
+        }
 }
