@@ -60,34 +60,7 @@
   (getUserInfo [_ params])
   (getAll [_ verifier]))
 
-(defmacro defrecord+defaults
-  "Defines a new record, along with a new-RecordName factory function that
-   returns an instance of the record initialized with the default values
-   provided as part of the record's slot declarations.  e.g.
-   (defrecord+ Foo [a 5 b \"hi\"])
-   (new-Foo)
-   => #user.Foo{:a 5, :b \"hi\"}"
-  [name slots & etc]
-  (let [fields   (->> slots (partition 2) (map first) vec)
-        defaults (->> slots (partition 2) (map second))]
-    `(do
-       (defrecord ~name
-           ~fields
-         ~@etc)
-       (defn ~(symbol (str "new-" name))
-         ~(str "A factory function returning a new instance of " name
-               " initialized with the defaults specified in the corresponding defrecord+ form.")
-         [& {:as kwargs#}]
-         (-> (~(symbol (str name \.)) ~@defaults)
-             (merge kwargs#)))
-       ~name)))
-
-(defrecord+defaults Social [type nil
-                            app-key nil
-                            app-secret nil
-                            callback-url nil
-                            scope nil
-                            state nil]
+(defrecord Social [type app-key app-secret callback-uri scope state]
   ISocial
   (getAuthorizationUrl [this]
     (wrap-service this (.getAuthorizationUrl ((spec type) :request-token))))
@@ -101,10 +74,10 @@
         (str (.getSecret access-token))
         (contains? #{:qq :weibo} type)
         (-> this
-           (wrap-service
-            (get-body access-token ((spec type) :id-url))
-            (((spec type) :id-fn)))
-           str))))
+            (wrap-service
+             (get-body access-token ((spec type) :id-url))
+             (((spec type) :id-fn)))
+            str))))
   (getUserInfo
     [this params]
     (let [params (build-params this params)
@@ -126,3 +99,7 @@
              :github (get user-info "login")
              id)
        :user-info user-info})))
+
+(defn make-social
+  [type app-key app-secret callback-uri & {:keys [scope state]}]
+  (->Social type app-key app-secret callback-uri scope state))

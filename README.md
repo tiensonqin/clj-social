@@ -9,12 +9,12 @@ for now support qq, sinaweibo and wechat.
 
 ### QQ Example ###
 ```clj
-(require '[clj-social.core :refer [new-Social]])
+(require '[clj-social.core :refer [make-social]])
 
 ;; scope default to nil, state default to UUID
-(def qq (new-Social :type :qq :app-key app-key :app-secret app-secret :callback-uri callback-uri))
+(def qq (make-social :qq app-key app-secret callback-uri))
 
-(def custom-qq (new-Social :type :qq :app-key app-key :app-secret app-secret :callback-uri callback-uri :scope scope :state state))
+(def custom-qq (make-social :qq app-key app-secret callback-uri :scope scope :state state))
 
 ;; get authorization url, then open it to get the callback code
 (def url (.getAuthorizationUrl qq))
