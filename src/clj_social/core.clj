@@ -18,12 +18,11 @@
     (ns-resolve ns (symbol "spec"))))
 
 (defn- build-service
-  [{:keys [type app-key app-secret callback-uri scope state]}]
+  [{:keys [type app-key app-secret callback-uri scope]}]
   (let [builder (.. (ServiceBuilder.)
                     (provider ((spec type) :api))
                     (apiKey app-key)
                     (apiSecret app-secret)
-                    (state (if state state (uuid)))
                     (callback callback-uri))
         builder (cond
                   (and (nil? scope) (= :wechat type))
@@ -63,7 +62,8 @@
 (defrecord Social [type app-key app-secret callback-uri scope state]
   ISocial
   (getAuthorizationUrl [this]
-    (wrap-service this (.getAuthorizationUrl ((spec type) :request-token))))
+    (let [url (wrap-service this (.getAuthorizationUrl ((spec type) :request-token)))]
+      (if (and url state) (str url "&state=" state) url)))
   (getAccessToken [this verifier]
     (wrap-service this (.getAccessToken ((spec type) :request-token)
                                         (Verifier. verifier))))

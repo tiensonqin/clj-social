@@ -23,9 +23,6 @@ public class GithubApi extends DefaultApi20
             final StringBuilder sb = new StringBuilder(String.format(AUTHORIZE_URL, config.getApiKey(), OAuthEncoder.encode(config.getCallback())));
             if (config.hasScope()) {
                 sb.append('&').append(OAuthConstants.SCOPE).append('=').append(OAuthEncoder.encode(config.getScope()));}
-            if (config.hasState()) {
-                sb.append('&').append(OAuthConstants.STATE).append('=').append(OAuthEncoder.encode(config.getState()));
-            }
             return sb.toString();
         }
 }
