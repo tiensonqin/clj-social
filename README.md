@@ -1,6 +1,6 @@
 # clj-social
 A Clojure library to make social easy,
-for now support qq, sinaweibo and wechat.
+for now support facebook and twitter.
 
 ## Latest version ##
 [![Clojars Project](http://clojars.org/clj-social/latest-version.svg)](http://clojars.org/clj-social)
@@ -12,30 +12,21 @@ for now support qq, sinaweibo and wechat.
 (require '[clj-social.core :refer [make-social]])
 
 ;; scope default to nil, state default to UUID
-(def qq (make-social :qq app-key app-secret callback-uri))
-
-(def custom-qq (make-social :qq app-key app-secret callback-uri :scope scope :state state))
+(def fb (make-social :facebook app-key app-secret callback-uri :state state))
 
 ;; get authorization url, then open it to get the callback code
-(def url (.getAuthorizationUrl qq))
+(def url (.getAuthorizationUrl fb))
 
 ;; get access-token
-(def access-token (.getAccessToken qq code))
-
-;; get openid
-(def id (.getId qq token))
+(def access-token (.getAccessToken fb code))
 
 ;; get user info
-(def user (.getUserInfo qq {:access-token token
-                            :id id}))
-
-;; get all at once
-(def all (.getAll qq code))
+(def user (.getUserInfo fb access-token))
 ```
 
 
 ## License
 
-Copyright © 2015 tiensonqin@gmail.com
+Copyright © 2017 tiensonqin@gmail.com
 
 Distributed under the Eclipse Public License version 1.0.

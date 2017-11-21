@@ -1,15 +1,23 @@
 (ns clj-social.core
   (:require [clojure.data.json :refer [read-str]])
-  (:import [org.scribe.builder ServiceBuilder]
-           [org.scribe.model Verifier OAuthRequest Verb]
-           [org.scribe.model OAuthRequest]
-           [org.scribe.model Verb]
+  (:import [com.github.scribejava.core.builder ServiceBuilder]
+           [com.github.scribejava.core.model OAuthRequest Verb]
+           [com.github.scribejava.core.oauth OAuth20Service]
+           [com.github.scribejava.apis FacebookApi]
+           [com.github.scribejava.apis TwitterApi]
            [java.util UUID]))
 
 (defn uuid
-  "Generate uuid."
   []
   (str (UUID/randomUUID)))
+
+(defn- get-body
+  [service access-token me-url]
+  (let [request (OAuthRequest. Verb/GET me-url)
+        _ (.signRequest service access-token request)
+        response (.execute service request)]
+    (-> (.getBody response)
+        (read-str :key-fn keyword))))
 
 (defn- spec
   [type]
@@ -18,11 +26,10 @@
     (ns-resolve ns (symbol "spec"))))
 
 (defn- build-service
-  [{:keys [type app-key app-secret callback-uri scope]}]
-  (let [builder (.. (ServiceBuilder.)
-                    (provider ((spec type) :api))
-                    (apiKey app-key)
+  [{:keys [type app-key app-secret callback-uri state scope]}]
+  (let [builder (.. (ServiceBuilder. app-key)
                     (apiSecret app-secret)
+                    (state state)
                     (callback callback-uri))
         builder (cond
                   (and (nil? scope) (= :wechat type))
@@ -31,75 +38,38 @@
                   builder
                   :else
                   (.scope builder scope))]
-    (.build builder)))
-
-(defn- get-body
-  [service access-token id-url]
-  (let [request (OAuthRequest. Verb/GET id-url)
-        _ (.signRequest service access-token request)
-        response (.send request)]
-    (.getBody response)))
-
-(defmacro wrap-service
-  [social & body]
-  `(-> ~social
-       build-service
-       ~@body))
-
-(defn- build-params
-  [{:keys [type app-key]} replaces]
-  (let [template ((spec type) :params)
-        replaces (assoc replaces :app-key app-key)]
-    (zipmap (map name (keys template)) (map replaces (vals template)))))
+    (.build builder ((spec type) :api))))
 
 (defprotocol ISocial
   (getAuthorizationUrl [_])
-  (getAccessToken [_ verifier])
-  (getId [_ access-token])
-  (getUserInfo [_ params])
-  (getAll [_ verifier]))
+  (getAccessToken [_ code])
+  (getRequestAccessToken [_ request-token verifier])
+  (getUserInfo [_ access-token]))
 
-(defrecord Social [type app-key app-secret callback-uri scope state]
+(defrecord Social [service type]
   ISocial
   (getAuthorizationUrl [this]
-    (let [url (wrap-service this (.getAuthorizationUrl ((spec type) :request-token)))]
-      (if (and url state) (str url "&state=" state) url)))
-  (getAccessToken [this verifier]
-    (wrap-service this (.getAccessToken ((spec type) :request-token)
-                                        (Verifier. verifier))))
-  (getId [this access-token]
-    (let [type (keyword type)]
-      (cond
-        (= type :wechat)
-        (str (.getSecret access-token))
-        (contains? #{:qq :weibo} type)
-        (-> this
-            (wrap-service
-             (get-body access-token ((spec type) :id-url))
-             (((spec type) :id-fn)))
-            str))))
-  (getUserInfo
-    [this params]
-    (let [params (build-params this params)
-          req (OAuthRequest. Verb/GET ((spec type) :user-url))
-          _ (doseq [[k v] params]
-              (.addQuerystringParameter req k v))]
-      (-> (.send req)
-          (.getBody)
-          read-str)))
-  (getAll
-    [this verifier]
-    (let [token (getAccessToken this verifier)
-          id (getId this token)
-          token (.getToken token)
-          user-info (getUserInfo this {:access-token token
-                                       :id id})]
-      {:access-token token
-       :id (case type
-             :github (get user-info "login")
-             id)
-       :user-info user-info})))
+    (let [service-spec (spec type)]
+      (if (service-spec :request-token)
+        (let [request-token (.getRequestToken service)]
+          {:request-token request-token
+           :authorization-url (.getAuthorizationUrl service request-token)})
+        (.getAuthorizationUrl service))))
+  (getAccessToken [this code]
+    (.getAccessToken service code))
+
+  (getRequestAccessToken [this request-token verifier]
+    (.getAccessToken service request-token verifier))
+
+  (getUserInfo [this access-token]
+    (get-body service access-token ((spec type) :user-url))))
 
 (defn make-social
   [type app-key app-secret callback-uri & {:keys [scope state]}]
-  (->Social type app-key app-secret callback-uri scope state))
+  (->Social (build-service {:type type
+                            :app-key app-key
+                            :app-secret app-secret
+                            :callback-uri callback-uri
+                            :scope scope
+                            :state state})
+            type))
