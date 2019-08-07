@@ -7,7 +7,7 @@ for now support facebook and twitter.
 
 ## Usage
 
-### QQ Example ###
+### Facebook Example ###
 ```clj
 (require '[clj-social.core :refer [make-social]])
 
