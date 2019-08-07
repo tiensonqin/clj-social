@@ -27,6 +27,6 @@ for now support facebook and twitter.
 
 ## License
 
-Copyright © 2017 tiensonqin@gmail.com
+Copyright © 2019 tiensonqin@gmail.com
 
 Distributed under the Eclipse Public License version 1.0.
