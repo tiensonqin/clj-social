@@ -11,9 +11,14 @@
   []
   (str (UUID/randomUUID)))
 
+(defn- add-params-to-request
+  [request params]
+  (doseq [key (keys params)] (.addParameter request key (params key))))
+
 (defn- get-body
-  [service access-token me-url]
+  [service access-token me-url & [params]]
   (let [request (OAuthRequest. Verb/GET me-url)
+        _ (when params (add-params-to-request request params))
         _ (.signRequest service access-token request)
         response (.execute service request)]
     (-> (.getBody response)
@@ -44,7 +49,8 @@
   (getAuthorizationUrl [_])
   (getAccessToken [_ code])
   (getRequestAccessToken [_ request-token verifier])
-  (getUserInfo [_ access-token]))
+  (getUserInfo [_ access-token] 
+              [_ access-token params] ))
 
 (defrecord Social [service type]
   ISocial
@@ -62,7 +68,10 @@
     (.getAccessToken service request-token verifier))
 
   (getUserInfo [this access-token]
-    (get-body service access-token ((spec type) :user-url))))
+    (get-body service access-token ((spec type) :user-url)))
+    
+  (getUserInfo [this access-token request-params]
+    (get-body service access-token ((spec type) :user-url) request-params)))
 
 (defn make-social
   [type app-key app-secret callback-uri & {:keys [scope state]}]
