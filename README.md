@@ -12,7 +12,7 @@ for now support facebook and twitter.
 (require '[clj-social.core :refer [make-social]])
 
 ;; scope default to nil, state default to UUID
-(def fb (make-social :facebook app-key app-secret callback-uri :state state))
+(def fb (make-social :facebook app-key app-secret callback-uri :state state :scope "email"))
 
 ;; get authorization url, then open it to get the callback code
 (def url (.getAuthorizationUrl fb))

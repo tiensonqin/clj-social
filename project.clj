@@ -1,4 +1,4 @@
-(defproject clj-social "0.1.5"
+(defproject clj-social "0.1.6"
   :description "A Clojure library to make social easy."
   :url "https://github.com/tiensonqin/clj-social"
   :license {:name "Eclipse Public License"
