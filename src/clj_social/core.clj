@@ -42,11 +42,11 @@
                       (callback callback-uri)))
         builder (cond
                   (and (nil? scope) (= :wechat type))
-                  (.scope builder "snsapi_login")
+                  (.defaultScope builder "snsapi_login")
                   (nil? scope)
                   builder
                   :else
-                  (.scope builder scope))]
+                  (.defaultScope builder scope))]
     (.build builder ((spec type) :api))))
 
 (defprotocol ISocial
