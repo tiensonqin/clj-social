@@ -32,10 +32,14 @@
 
 (defn- build-service
   [{:keys [type app-key app-secret callback-uri state scope]}]
-  (let [builder (.. (ServiceBuilder. app-key)
-                    (apiSecret app-secret)
-                    (state state)
-                    (callback callback-uri))
+  (let [builder (if state
+                  (.. (ServiceBuilder. app-key)
+                      (apiSecret app-secret)
+                      (state state)
+                      (callback callback-uri))
+                  (.. (ServiceBuilder. app-key)
+                      (apiSecret app-secret)
+                      (callback callback-uri)))
         builder (cond
                   (and (nil? scope) (= :wechat type))
                   (.scope builder "snsapi_login")
@@ -49,8 +53,8 @@
   (getAuthorizationUrl [_])
   (getAccessToken [_ code])
   (getRequestAccessToken [_ request-token verifier])
-  (getUserInfo [_ access-token] 
-              [_ access-token params] ))
+  (getUserInfo [_ access-token]
+    [_ access-token params] ))
 
 (defrecord Social [service type]
   ISocial
@@ -69,7 +73,7 @@
 
   (getUserInfo [this access-token]
     (get-body service access-token ((spec type) :user-url)))
-    
+
   (getUserInfo [this access-token request-params]
     (get-body service access-token ((spec type) :user-url) request-params)))
 
